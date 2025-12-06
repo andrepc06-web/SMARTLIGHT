@@ -137,7 +137,7 @@ void loop() {
     lcd.print(distancia, 0);
     lcd.print("cm ");
 
-    int nivel = map(distancia, 0, 100, 40, 0);
+    int nivel = map(distancia, 0, 120, 40, 0);
     if (nivel < 0) nivel = 0;
     if (nivel > 40) nivel = 40;
 
