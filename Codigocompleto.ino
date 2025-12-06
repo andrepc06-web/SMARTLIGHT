@@ -4,9 +4,7 @@
 
 DFRobot_RGBLCD1602 lcd(16, 2);
 
-
 #define NOME_BLUETOOTH "ESP32-C6-SENSORES"
-
 
 int pinLDR = 3;
 int pinLED = 21;
@@ -15,17 +13,14 @@ int pinLED = 21;
 #define ECHO 7
 #define BUZZER 15
 
-
 int limiteEscuro = 1500;
 int limiteClaro  = 1800;
 bool luzLigada = false;
-
 
 NimBLECharacteristic* pCharacteristicLED;
 NimBLECharacteristic* pCharacteristicLuz;
 NimBLECharacteristic* pCharacteristicDistancia;
 NimBLECharacteristic* pCharacteristicAviso;
-
 
 byte barra0[8] = {0b00000,0b00000,0b00000,0b00000,0b00000,0b00000,0b00000,0b00000};
 byte barra1[8] = {0b10000,0b10000,0b10000,0b10000,0b10000,0b10000,0b10000,0b10000};
@@ -34,16 +29,12 @@ byte barra3[8] = {0b11100,0b11100,0b11100,0b11100,0b11100,0b11100,0b11100,0b1110
 byte barra4[8] = {0b11110,0b11110,0b11110,0b11110,0b11110,0b11110,0b11110,0b11110};
 byte barra5[8] = {0b11111,0b11111,0b11111,0b11111,0b11111,0b11111,0b11111,0b11111};
 
-
 void setup() {
   Serial.begin(115200);
 
-  
   Wire.begin(8, 9);
   lcd.init();
-  lcd.setRGB(255, 255, 255);
 
-  
   lcd.customSymbol(0, barra0);
   lcd.customSymbol(1, barra1);
   lcd.customSymbol(2, barra2);
@@ -58,13 +49,11 @@ void setup() {
   delay(1200);
   lcd.clear();
 
-  
   pinMode(pinLED, OUTPUT);
   pinMode(TRIG, OUTPUT);
   pinMode(ECHO, INPUT);
   pinMode(BUZZER, OUTPUT);
 
-  
   NimBLEDevice::init(NOME_BLUETOOTH);
   NimBLEDevice::setPower(ESP_PWR_LVL_P9);
 
@@ -90,42 +79,37 @@ void setup() {
   Serial.println("BLE ativo e LCD ligado!");
 }
 
-
 void loop() {
 
-  
   int valorLuz = analogRead(pinLDR);
 
   if (!luzLigada && valorLuz > limiteEscuro) {
-    digitalWrite(pinLED, HIGH);
+    digitalWrite(pinLED, LOW);
     luzLigada = true;
   }
   if (luzLigada && valorLuz < limiteClaro) {
-    digitalWrite(pinLED, LOW);
+    digitalWrite(pinLED, HIGH);
     luzLigada = false;
   }
 
-  
   float distancia = medirDistancia();
   bool aviso = false;
 
   int delayBuzzer = 0;
 
-  
   if (distancia > 0 && distancia <= 25) {
-    delayBuzzer = 100;     
+    delayBuzzer = 100;
   }
   else if (distancia <= 60) {
-    delayBuzzer = 250;     
+    delayBuzzer = 250;
   }
   else if (distancia <= 120) {
-    delayBuzzer = 600;     
+    delayBuzzer = 600;
   }
   else {
-    delayBuzzer = 0;       
+    delayBuzzer = 0;
   }
 
-  // ATIVAR BUZZER
   if (delayBuzzer > 0) {
     tone(BUZZER, 2000);
     delay(delayBuzzer);
@@ -138,29 +122,21 @@ void loop() {
     aviso = false;
   }
 
-  
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Luz: ");
   lcd.print(luzLigada ? "ON " : "OFF");
 
-  
   if (aviso && distancia > 0 && distancia <= 25) {
-    lcd.setRGB(255, 0, 0);
     lcd.setCursor(0, 1);
     lcd.print("   PERIGO !!!   ");
   }
-
-  
   else {
-    lcd.setRGB(255, 255, 255);
-
     lcd.setCursor(0, 1);
     lcd.print("D:");
     lcd.print(distancia, 0);
     lcd.print("cm ");
 
-    
     int nivel = map(distancia, 0, 100, 40, 0);
     if (nivel < 0) nivel = 0;
     if (nivel > 40) nivel = 40;
@@ -179,7 +155,6 @@ void loop() {
     }
   }
 
-  
   pCharacteristicLED->setValue(luzLigada ? "LIGADO" : "DESLIGADO");
   pCharacteristicLuz->setValue(String(valorLuz).c_str());
   pCharacteristicDistancia->setValue(String(distancia, 1).c_str());
@@ -190,7 +165,6 @@ void loop() {
   pCharacteristicDistancia->notify();
   pCharacteristicAviso->notify();
 
- 
   Serial.print("LED: "); Serial.print(luzLigada ? "LIGADO" : "DESLIGADO");
   Serial.print(" | Luz: "); Serial.print(valorLuz);
   Serial.print(" | Dist: "); Serial.print(distancia, 1);
@@ -198,7 +172,6 @@ void loop() {
 
   delay(120);
 }
-
 
 float medirDistancia() {
   digitalWrite(TRIG, LOW);
@@ -211,4 +184,3 @@ float medirDistancia() {
   if (duracao == 0) return 0;
   return duracao * 0.0343 / 2;
 }
- 
