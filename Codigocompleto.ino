@@ -10,6 +10,7 @@ DFRobot_RGBLCD1602 lcd(16, 2);
 
 int pinLDR = 3;
 int pinLED = 21;
+
 #define TRIG 4
 #define ECHO 7
 #define BUZZER 15
@@ -91,6 +92,7 @@ void setup() {
 
 
 void loop() {
+
   
   int valorLuz = analogRead(pinLDR);
 
@@ -109,19 +111,28 @@ void loop() {
 
   int delayBuzzer = 0;
 
-  if (distancia <= 10 && distancia > 0) delayBuzzer = 100;
-  else if (distancia <= 20)            delayBuzzer = 250;
-  else if (distancia <= 30)            delayBuzzer = 500;
-  else if (distancia <= 50)            delayBuzzer = 1000;
-  else delayBuzzer = 0;
+  
+  if (distancia > 0 && distancia <= 25) {
+    delayBuzzer = 100;     
+  }
+  else if (distancia <= 60) {
+    delayBuzzer = 250;     
+  }
+  else if (distancia <= 120) {
+    delayBuzzer = 600;     
+  }
+  else {
+    delayBuzzer = 0;       
+  }
 
+  // ATIVAR BUZZER
   if (delayBuzzer > 0) {
     tone(BUZZER, 2000);
     delay(delayBuzzer);
     noTone(BUZZER);
     delay(delayBuzzer);
     aviso = true;
-  } 
+  }
   else {
     noTone(BUZZER);
     aviso = false;
@@ -129,13 +140,12 @@ void loop() {
 
   
   lcd.clear();
-
   lcd.setCursor(0, 0);
   lcd.print("Luz: ");
   lcd.print(luzLigada ? "ON " : "OFF");
 
   
-  if (aviso && distancia > 0 && distancia < 20) {
+  if (aviso && distancia > 0 && distancia <= 25) {
     lcd.setRGB(255, 0, 0);
     lcd.setCursor(0, 1);
     lcd.print("   PERIGO !!!   ");
@@ -180,7 +190,7 @@ void loop() {
   pCharacteristicDistancia->notify();
   pCharacteristicAviso->notify();
 
-  
+ 
   Serial.print("LED: "); Serial.print(luzLigada ? "LIGADO" : "DESLIGADO");
   Serial.print(" | Luz: "); Serial.print(valorLuz);
   Serial.print(" | Dist: "); Serial.print(distancia, 1);
@@ -191,13 +201,14 @@ void loop() {
 
 
 float medirDistancia() {
-  digitalWrite(TRIG, LOW);  
+  digitalWrite(TRIG, LOW);
   delayMicroseconds(2);
-  digitalWrite(TRIG, HIGH); 
+  digitalWrite(TRIG, HIGH);
   delayMicroseconds(10);
-  digitalWrite(TRIG, LOW);  
+  digitalWrite(TRIG, LOW);
 
   long duracao = pulseIn(ECHO, HIGH, 40000);
   if (duracao == 0) return 0;
   return duracao * 0.0343 / 2;
 }
+ 
