@@ -2,7 +2,6 @@
 #include <Wire.h>
 #include "DFRobot_RGBLCD1602.h"
 
-
 DFRobot_RGBLCD1602 lcd(16, 2);
 
 
@@ -11,7 +10,6 @@ DFRobot_RGBLCD1602 lcd(16, 2);
 
 int pinLDR = 3;
 int pinLED = 21;
-
 #define TRIG 4
 #define ECHO 7
 #define BUZZER 15
@@ -28,13 +26,29 @@ NimBLECharacteristic* pCharacteristicDistancia;
 NimBLECharacteristic* pCharacteristicAviso;
 
 
+byte barra0[8] = {0b00000,0b00000,0b00000,0b00000,0b00000,0b00000,0b00000,0b00000};
+byte barra1[8] = {0b10000,0b10000,0b10000,0b10000,0b10000,0b10000,0b10000,0b10000};
+byte barra2[8] = {0b11000,0b11000,0b11000,0b11000,0b11000,0b11000,0b11000,0b11000};
+byte barra3[8] = {0b11100,0b11100,0b11100,0b11100,0b11100,0b11100,0b11100,0b11100};
+byte barra4[8] = {0b11110,0b11110,0b11110,0b11110,0b11110,0b11110,0b11110,0b11110};
+byte barra5[8] = {0b11111,0b11111,0b11111,0b11111,0b11111,0b11111,0b11111,0b11111};
+
+
 void setup() {
   Serial.begin(115200);
 
   
-  Wire.begin(8, 9);        
+  Wire.begin(8, 9);
   lcd.init();
   lcd.setRGB(255, 255, 255);
+
+  
+  lcd.customSymbol(0, barra0);
+  lcd.customSymbol(1, barra1);
+  lcd.customSymbol(2, barra2);
+  lcd.customSymbol(3, barra3);
+  lcd.customSymbol(4, barra4);
+  lcd.customSymbol(5, barra5);
 
   lcd.setCursor(0, 0);
   lcd.print("SMARTLIGHT");
@@ -56,10 +70,10 @@ void setup() {
   NimBLEServer* pServer = NimBLEDevice::createServer();
   NimBLEService* pService = pServer->createService("FFE0");
 
-  pCharacteristicLED       = pService->createCharacteristic("LED",       NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
-  pCharacteristicLuz       = pService->createCharacteristic("LUZ",       NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
-  pCharacteristicDistancia = pService->createCharacteristic("DIST",      NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
-  pCharacteristicAviso     = pService->createCharacteristic("AVISO",     NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+  pCharacteristicLED       = pService->createCharacteristic("LED",   NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+  pCharacteristicLuz       = pService->createCharacteristic("LUZ",   NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+  pCharacteristicDistancia = pService->createCharacteristic("DIST",  NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+  pCharacteristicAviso     = pService->createCharacteristic("AVISO", NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
 
   pCharacteristicLED->setValue("DESLIGADO");
   pCharacteristicLuz->setValue("0");
@@ -72,7 +86,7 @@ void setup() {
   pAdvertising->addServiceUUID("FFE0");
   pAdvertising->start();
 
-  Serial.println(" BLE ativo e LCD ligado!");
+  Serial.println("BLE ativo e LCD ligado!");
 }
 
 
@@ -96,9 +110,9 @@ void loop() {
   int delayBuzzer = 0;
 
   if (distancia <= 10 && distancia > 0) delayBuzzer = 100;
-  else if (distancia <= 20)           delayBuzzer = 250;
-  else if (distancia <= 30)           delayBuzzer = 500;
-  else if (distancia <= 50)           delayBuzzer = 1000;
+  else if (distancia <= 20)            delayBuzzer = 250;
+  else if (distancia <= 30)            delayBuzzer = 500;
+  else if (distancia <= 50)            delayBuzzer = 1000;
   else delayBuzzer = 0;
 
   if (delayBuzzer > 0) {
@@ -107,7 +121,8 @@ void loop() {
     noTone(BUZZER);
     delay(delayBuzzer);
     aviso = true;
-  } else {
+  } 
+  else {
     noTone(BUZZER);
     aviso = false;
   }
@@ -119,33 +134,46 @@ void loop() {
   lcd.print("Luz: ");
   lcd.print(luzLigada ? "ON " : "OFF");
 
+  
   if (aviso && distancia > 0 && distancia < 20) {
-    lcd.setRGB(255, 0, 0); 
+    lcd.setRGB(255, 0, 0);
     lcd.setCursor(0, 1);
-    lcd.print("  ! PERIGO ! ");
+    lcd.print("   PERIGO !!!   ");
   }
+
+  
   else {
-    lcd.setRGB(255, 255, 255);  
+    lcd.setRGB(255, 255, 255);
 
     lcd.setCursor(0, 1);
     lcd.print("D:");
     lcd.print(distancia, 0);
     lcd.print("cm ");
 
-    int barras = map(distancia, 0, 100, 1, 8);
-    if (barras < 0) barras = 0;
-    if (barras > 8) barras = 8;
+    
+    int nivel = map(distancia, 0, 100, 40, 0);
+    if (nivel < 0) nivel = 0;
+    if (nivel > 40) nivel = 40;
 
     lcd.setCursor(9, 1);
-    for (int i = 0; i < barras; i++)
-      lcd.print((char)255);
+
+    for (int bloco = 0; bloco < 8; bloco++) {
+      int resto = nivel - (bloco * 5);
+
+      if (resto >= 5)      lcd.print((char)5);
+      else if (resto == 4) lcd.print((char)4);
+      else if (resto == 3) lcd.print((char)3);
+      else if (resto == 2) lcd.print((char)2);
+      else if (resto == 1) lcd.print((char)1);
+      else                 lcd.print((char)0);
+    }
   }
 
   
   pCharacteristicLED->setValue(luzLigada ? "LIGADO" : "DESLIGADO");
   pCharacteristicLuz->setValue(String(valorLuz).c_str());
   pCharacteristicDistancia->setValue(String(distancia, 1).c_str());
-  pCharacteristicAviso->setValue(aviso ? "PERTO" : "SEGURO");
+  pCharacteristicAviso->setValue(aviso ? "PERIGO" : "SEGURO");
 
   pCharacteristicLED->notify();
   pCharacteristicLuz->notify();
@@ -156,18 +184,18 @@ void loop() {
   Serial.print("LED: "); Serial.print(luzLigada ? "LIGADO" : "DESLIGADO");
   Serial.print(" | Luz: "); Serial.print(valorLuz);
   Serial.print(" | Dist: "); Serial.print(distancia, 1);
-  Serial.print(" | Aviso: "); Serial.println(aviso ? "PERTO" : "SEGURO");
+  Serial.print(" | Aviso: "); Serial.println(aviso ? "PERIGO" : "SEGURO");
 
   delay(120);
 }
 
 
 float medirDistancia() {
-  digitalWrite(TRIG, LOW);
+  digitalWrite(TRIG, LOW);  
   delayMicroseconds(2);
-  digitalWrite(TRIG, HIGH);
+  digitalWrite(TRIG, HIGH); 
   delayMicroseconds(10);
-  digitalWrite(TRIG, LOW);
+  digitalWrite(TRIG, LOW);  
 
   long duracao = pulseIn(ECHO, HIGH, 40000);
   if (duracao == 0) return 0;
